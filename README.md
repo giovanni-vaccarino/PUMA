@@ -16,7 +16,7 @@ exploiting the **semantic redundancy** carried in the reasoning trajectory. It
 pairs a lightweight **Redundancy Detector** (which flags semantically redundant
 candidate exits) with **answer-level verification** (which confirms a stop is
 safe), removing redundant continuation while preserving both final-answer
-accuracy and a coherent reasoning prefix. Across five reasoning models and five
+accuracy and a coherent, semantically complete reasoning prefix. Across five reasoning models and five
 benchmarks, PUMA achieves **26.2% average token reduction** while preserving
 accuracy and retained-CoT quality.
 
