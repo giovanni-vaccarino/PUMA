@@ -59,20 +59,27 @@ which are *not* in `env.yml`. They are not needed to run PUMA.
 
 ## 📦 Input format
 
-Create an experiment directory containing `answers.json` — a JSON array with one
-object per question:
+PUMA is an **offline** pipeline: it starts from reasoning responses that have
+**already been generated**, so it does not call the reasoning model to produce
+them. First run your reasoning model over your questions (e.g. with vLLM), then
+save the outputs as `answers.json` in an experiment directory. The file is a
+JSON array with one object per question:
 
 ```json
 [
   {
     "question": "Compute ...",
-    "reasoning": "Full reasoning text from the model's <think> block.",
-    "raw_response": "Full model response, including reasoning and final answer.",
+    "reasoning": "The model's full <think> reasoning text.",
+    "raw_response": "The full model response (reasoning + final answer); used as a fallback when `reasoning` is empty.",
     "model_answer": "42",
     "ground_truth_answer": "42"
   }
 ]
 ```
+
+`question` and one of `reasoning` / `raw_response` are required. `model_answer`
+and `ground_truth_answer` are used to report accuracy before vs. after
+compression.
 
 ## 🚀 Run PUMA
 
