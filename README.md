@@ -2,7 +2,7 @@
 
 # 🐾 PUMA
 
-### Official implementation of *Stop When Reasoning Converges: Semantic-Preserving Early Exit for Reasoning Models*
+### Official implementation of [*Stop When Reasoning Converges: Semantic-Preserving Early Exit for Reasoning Models*](https://arxiv.org/abs/2605.17672)
 
 [![Paper](https://img.shields.io/badge/arXiv-2605.17672-b31b1b.svg)](https://arxiv.org/abs/2605.17672)
 [![Model](https://img.shields.io/badge/🤗-Redundancy%20Detector-yellow.svg)](https://huggingface.co/ZhishanQ/qwen3-embedding-redundancy-detector-0.6B)
