@@ -38,15 +38,24 @@ conda env create -f envs/env.yml
 conda activate puma
 ```
 
-The pipeline uses vLLM for both generation and embedding inference. You need
-access to (i) the reasoning model that produces trial/final answers and (ii) the
-Redundancy Detector embedding model. The trained detector is on the Hub:
-[`ZhishanQ/qwen3-embedding-redundancy-detector-0.6B`](https://huggingface.co/ZhishanQ/qwen3-embedding-redundancy-detector-0.6B).
+This installs everything needed to run the offline pipeline, the baselines, and
+the vision-language variants.
 
-Prompt templates are tested for DeepSeek-R1 / DeepSeek-R1-Distill-Qwen, Qwen3,
-QwQ, and Nemotron-style models. Vision-language code additionally needs
-`Pillow`; training the detector additionally needs
-[ms-swift](https://github.com/modelscope/ms-swift).
+**Models.** PUMA loads two models with vLLM at inference time:
+
+- a **reasoning model** that produces the trial and final answers
+  (e.g. `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`);
+- the **Redundancy Detector**, our fine-tuned embedding model
+  [`ZhishanQ/qwen3-embedding-redundancy-detector-0.6B`](https://huggingface.co/ZhishanQ/qwen3-embedding-redundancy-detector-0.6B)
+  (downloaded automatically from the Hub).
+
+The trial-answer prompt formatting is implemented for the **DeepSeek-R1 /
+DeepSeek-R1-Distill-Qwen, Qwen3, QwQ, and Nemotron** model families. To use a
+different family, add a branch in `puma/prompt_utils.py`.
+
+**Training only.** Re-training the Redundancy Detector (`train_rd/`) additionally
+requires [ms-swift](https://github.com/modelscope/ms-swift) and `flash-attn`,
+which are *not* in `env.yml`. They are not needed to run PUMA.
 
 ## 📦 Input format
 
