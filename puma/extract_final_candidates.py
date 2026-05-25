@@ -113,7 +113,7 @@ def consecutive_same_answer_and_conf_delta_method(
     }
 
     # forced_stop_step acts as an UPPER BOUND (latest possible stop point)
-    # We use min(normal_stop_point, forced_stop_step)
+    # forced_stop_step caps the latest step considered (similar to min with normal logic).
     # Convert to 1-indexed for comparison with stopped_len
     forced_stop_len = (forced_stop_step + 1) if forced_stop_step is not None else None
 
@@ -166,7 +166,7 @@ def consecutive_same_answer_and_conf_delta_method(
                 if min_stop_step > 0 and consecutive_entries[-1]["stopped_len"] < min_stop_step:
                     continue
 
-                # Use the last consecutive entry as the offline stopping point:
+                # Use the last consecutive entry as the stopping point:
                 # this is where answer consistency has actually been verified.
                 chosen = consecutive_entries[-1]
                 # Count trial answers up to and including the last consecutive entry
@@ -286,8 +286,8 @@ def _process_question(args):
 
 def extract_final_candidates(
     results: List[Dict],
-    confidence_threshold: float = 0.96,
-    epsilon: float = 0.05,
+    confidence_threshold: float = 0.98,
+    epsilon: float = 0.03,
     consecutive: int = 2,
     forced_stop_min_confidence: float = 0.0,
     min_stop_step: int = 0,
@@ -383,14 +383,14 @@ def main():
     parser.add_argument(
         "--confidence-threshold",
         type=float,
-        default=0.96,
-        help="Minimum confidence for first point (default: 0.96)"
+        default=0.98,
+        help="Minimum confidence for first point (default: 0.98)"
     )
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.05,
-        help="Maximum confidence drop allowed from first point (default: 0.05)"
+        default=0.03,
+        help="Maximum confidence drop allowed from first point (default: 0.03)"
     )
     parser.add_argument(
         "--consecutive",
@@ -402,6 +402,7 @@ def main():
         "--forced-stop-min-confidence",
         type=float,
         default=0.0,
+        dest="forced_stop_min_confidence",
         help="Minimum confidence gate for forced_stop_redundancy. "
              "If the best trial answer before forced_stop has confidence below this, "
              "skip forced_stop and use full reasoning instead. (default: 0.0 = no gate)"
@@ -410,6 +411,7 @@ def main():
         "--min-stop-step",
         type=int,
         default=0,
+        dest="min_stop_step",
         help="Minimum step count before allowing early stop. "
              "Steps before this are still evaluated but cannot trigger stopping. "
              "(default: 0 = no minimum)"

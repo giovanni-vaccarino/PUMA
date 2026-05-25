@@ -15,9 +15,9 @@ def run(cmd):
 
 
 def parse_args():
-    """Parse command-line arguments for the offline PUMA driver."""
+    """Parse command-line arguments for the PUMA pipeline driver."""
     parser = argparse.ArgumentParser(
-        description="Run the PUMA offline pipeline"
+        description="Run the PUMA pipeline"
     )
 
     parser.add_argument(
@@ -52,11 +52,25 @@ def parse_args():
         default=1,
         help="K: compare each step against the last K steps (default: 1)",
     )
+
+    # Loop Breaker Hyperparameters
     parser.add_argument(
         "--consecutive-redundancy-stop",
         type=int,
+        default=3,
+        help="m: consecutive redundant steps before Loop Breaker triggers (default: 3)",
+    )
+    parser.add_argument(
+        "--consecutive-redundancy-min-step",
+        type=int,
         default=50,
-        help="Loop Breaker: number of consecutive redundant steps before forced exit (default: 50)",
+        help="Late-stage activation: only detect consecutive redundancy after this step (default: 50)",
+    )
+    parser.add_argument(
+        "--forced-stop-min-confidence",
+        type=float,
+        default=0.8,
+        help="Weak minimum-confidence gate for Loop Breaker (default: 0.8)",
     )
 
     # Verified Early Exit Hyperparameters
@@ -127,6 +141,7 @@ def main():
         "--window-size", args.window_size,
         "--trigger-mode", "previous",
         "--consecutive-redundancy-stop", args.consecutive_redundancy_stop,
+        "--consecutive-redundancy-min-step", args.consecutive_redundancy_min_step,
     ])
 
     # Generate trial answers
@@ -135,7 +150,7 @@ def main():
         "--questions-file", base / "filtered_steps.json",
         "--output-file", base / "trial_answers.json",
         "--model", model,
-        "--max-tokens", 15,  # tight budget: trial answers only need the boxed value (~5-15 tokens)
+        "--max-tokens", 30,  # align with paper (Appendix B.6): trial generation capped at ~30 tokens for math
         "--temperature", 0.0,
         "--respect-embedding-filter",
     ]
@@ -152,6 +167,7 @@ def main():
         "--epsilon", args.epsilon,
         "--consecutive", args.consecutive,
         "--filtered-steps", base / "filtered_steps.json",
+        "--forced-stop-min-confidence", args.forced_stop_min_confidence,
     ])
 
     # Generate final answer from truncated prefix

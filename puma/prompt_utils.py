@@ -1,4 +1,4 @@
-"""Prompt and answer utilities for the offline math PUMA pipeline."""
+"""Prompt and answer utilities for the math PUMA pipeline."""
 
 
 INSTRUCTION_MATH = (

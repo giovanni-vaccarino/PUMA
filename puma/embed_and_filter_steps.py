@@ -9,7 +9,7 @@ Usage:
     python -m puma.embed_and_filter_steps \
         --input-file steps.json \
         --output-file filtered_steps.json \
-        --embedding-model /path/to/checkpoint-41605 \
+        --embedding-model /path/to/checkpoint \
         --similarity-threshold 0.35 \
         --always-check-first-n 1 \
         --window-size 1 \
