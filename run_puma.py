@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -95,6 +96,13 @@ def parse_args():
 
     # vLLM options
     parser.add_argument(
+        "--tensor-parallel-size",
+        type=int,
+        default=0,
+        help="GPUs for vLLM tensor parallelism. 0 (default) auto-detects from "
+        "CUDA_VISIBLE_DEVICES; e.g. allocate 2 GPUs for 30B/32B models.",
+    )
+    parser.add_argument(
         "--logprobs-mode",
         type=str,
         default=None,
@@ -114,6 +122,13 @@ def main():
     args = parse_args()
     base = args.base_dir
     model = args.model
+
+    # Tensor parallelism: auto-detect from visible GPUs unless set explicitly.
+    tp_size = args.tensor_parallel_size
+    if tp_size <= 0:
+        visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+        tp_size = len([d for d in visible.split(",") if d.strip()]) or 1
+    logger.info("Tensor parallel size: %d", tp_size)
 
     if not base.exists():
         raise FileNotFoundError(f"Base directory does not exist: {base}")
@@ -150,6 +165,7 @@ def main():
         "--questions-file", base / "filtered_steps.json",
         "--output-file", base / "trial_answers.json",
         "--model", model,
+        "--tensor-parallel-size", tp_size,
         "--max-tokens", 30,  # align with paper (Appendix B.6): trial generation capped at ~30 tokens for math
         "--temperature", 0.0,
         "--respect-embedding-filter",
@@ -177,6 +193,7 @@ def main():
         "--questions-file", base / "steps.json",
         "--output-file", base / "prefixed_answers.json",
         "--model", model,
+        "--tensor-parallel-size", tp_size,
         "--max-tokens", 2048,
     ])
 
