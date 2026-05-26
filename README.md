@@ -20,6 +20,9 @@ accuracy and a coherent, semantically complete reasoning prefix. Across five rea
 benchmarks, PUMA achieves **26.2% average token reduction** while preserving
 accuracy and retained-CoT quality.
 
+> The code released here is the **offline** version of PUMA; the online version
+> is being prepared for release.
+
 ## 📁 Repository structure
 
 | Path | Description |
@@ -30,6 +33,7 @@ accuracy and retained-CoT quality.
 | `baselines/` | Efficient-reasoning baselines: DEER, Dynasor, CCoT, CoD, NoThinking, Plan&Budget, Answer Consistency (+ Full-CoT vanilla). |
 | `puma_vl/` + `baselines_vl/` | Zero-shot vision-language variants of the pipeline and baselines. |
 | `train_rd/` | Recipe + scripts to train the Redundancy Detector, plus a data sample. |
+| `slurm/` | Generic SLURM template for running the pipeline on a cluster. |
 
 ## ⚙️ Installation
 
@@ -59,11 +63,11 @@ which are *not* in `env.yml`. They are not needed to run PUMA.
 
 ## 📦 Input format
 
-PUMA is an **offline** pipeline: it starts from reasoning responses that have
-**already been generated**, so it does not call the reasoning model to produce
-them. First run your reasoning model over your questions (e.g. with vLLM), then
-save the outputs as `answers.json` in an experiment directory. The file is a
-JSON array with one object per question:
+The offline pipeline starts from reasoning responses that have **already been
+generated**, so it does not call the reasoning model to produce them. First run
+your reasoning model over your questions (e.g. with vLLM), then save the outputs
+as `answers.json` in an experiment directory. The file is a JSON array with one
+object per question:
 
 ```json
 [
@@ -83,21 +87,30 @@ compression.
 
 ## 🚀 Run PUMA
 
-Directly:
-
-```bash
-python run_puma.py \
-  --base-dir /path/to/experiment \
-  --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
-  --embedding-model ZhishanQ/qwen3-embedding-redundancy-detector-0.6B
-```
-
-Or with a per-model config (recommended — sets the tuned hyperparameters):
+Run PUMA through a per-model config — the config sets the hyperparameters tuned
+for that model in the paper (RD / Loop Breaker / verified early exit):
 
 ```bash
 bash run_from_config.sh configs/DS-7B.conf /path/to/experiment \
      deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 ```
+
+`run_from_config.sh` simply sources the config and calls `run_puma.py` with the
+corresponding flags. You can also call `run_puma.py` directly if you want to set
+every flag yourself (see [Main hyperparameters](#️-main-hyperparameters)):
+
+```bash
+python run_puma.py --base-dir /path/to/experiment \
+  --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
+  --embedding-model ZhishanQ/qwen3-embedding-redundancy-detector-0.6B \
+  --similarity-threshold 0.35 --consecutive-redundancy-stop 1 ...
+```
+
+**Multi-GPU.** vLLM tensor parallelism is auto-detected from the number of
+visible GPUs, so the larger models just need more GPUs made visible (e.g.
+`CUDA_VISIBLE_DEVICES=0,1` for DS-32B / Qwen3-30B-T); override with
+`--tensor-parallel-size`. To run on a cluster, adapt
+[`slurm/puma_pipeline.slurm`](slurm/puma_pipeline.slurm).
 
 After the run, the experiment directory contains:
 
@@ -133,16 +146,30 @@ for Qwen3-30B-T where it is disabled).
 ## 📊 Baselines
 
 `baselines/` provides runners for the efficient-reasoning baselines compared in
-the paper. Each `run_*.py` first generates a Full-CoT reference and then runs the
-method:
+the paper (DEER, Dynasor, CCoT, CoD, NoThinking, Plan&Budget, Answer
+Consistency). They are plain CLI scripts (no config files); each generates a
+Full-CoT reference and then runs its method, reporting accuracy and compression.
+
+The flags differ slightly by method — **DEER** reads a dataset directory, while
+the others take a benchmark `.jsonl` file:
 
 ```bash
-python -m baselines.run_deer    --model <model> --dataset <dataset>
-python -m baselines.run_dynasor --model <model> --dataset <dataset>
-# also: run_concise (CCoT), run_cod, run_nothinking, run_planbudget, run_answer_consistency
+# DEER
+python -m baselines.run_deer --model <model> \
+    --dataset_dir data --dataset aime24 --output-dir runs/deer_aime24
+
+# Dynasor / CCoT (run_concise) / CoD / NoThinking / Plan&Budget / Answer Consistency
+python -m baselines.run_dynasor --model <model> \
+    --benchmark data/aime24_test.jsonl --output-dir runs/dynasor_aime24
 ```
 
-Vision-language variants are in `baselines_vl/` and `puma_vl/`.
+Pass `--vanilla-answers <file>` to reuse precomputed Full-CoT answers, or
+`--eval-only` to recompute metrics without re-running inference. See
+[`baselines/README.md`](baselines/README.md) for the per-method options and the
+metric definitions (CR / CRT).
+
+Zero-shot vision-language variants of PUMA and the baselines are in `puma_vl/`
+and `baselines_vl/`.
 
 ## 🧠 Train the Redundancy Detector
 

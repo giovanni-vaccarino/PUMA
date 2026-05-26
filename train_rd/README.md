@@ -14,9 +14,8 @@ over** prior content.
 |------|---------|
 | `train_rd.sh` | InfoNCE full fine-tuning recipe (ms-swift) |
 | `sample_train.jsonl` | 30-row sample showing the contrastive data format |
-| `create_v9_corrected_filt.py` | Builds the final training set by merging/filtering candidate pools |
-| `mine_hard_negatives.py` | Mines hard negatives for each anchor step |
 | `create_training_from_labels.py` | Turns novelty/redundancy labels into contrastive groups |
+| `create_v9_corrected_filt.py` | Builds the final training set by merging/filtering candidate pools |
 
 ## Data format
 
@@ -52,6 +51,6 @@ PUMA pipeline (see the repository root README).
 
 The released dataset is the **final** training set. The construction scripts
 here are provided as reference for the key steps (label → contrastive group →
-hard-negative mining); the full multi-stage iteration that produced intermediate
-candidate pools is omitted for brevity. To reproduce training, use the released
-dataset directly.
+merge/filter into the final set); the full multi-stage iteration that produced
+intermediate candidate pools is omitted for brevity. To reproduce training, use
+the released dataset directly.
