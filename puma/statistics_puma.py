@@ -6,7 +6,7 @@ import sys
 from typing import Dict, List
 from multiprocessing import Pool
 from transformers import AutoTokenizer
-# Add method/offline to path for math_grader import
+# Add this script's directory to path for the math_grader import
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
 from math_grader import check_is_correct
 from prompt_utils import get_task_type

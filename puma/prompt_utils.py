@@ -2,9 +2,9 @@
 Shared prompt construction utilities for the PUMA pipeline.
 
 Used by:
-- method/offline/run_vllm.py (Step 1a: answer generation)
-- method/offline/gen_trial_answers.py (Step 2: trial answers)
-- method/offline/gen_prefixed_answers.py (Step 4: prefixed answers)
+- puma/run_vllm.py (Step 1a: answer generation)
+- puma/gen_trial_answers.py (Step 2: trial answers)
+- puma/gen_prefixed_answers.py (Step 4: prefixed answers)
 """
 
 import difflib

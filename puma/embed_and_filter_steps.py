@@ -6,14 +6,14 @@ This script computes embeddings for reasoning steps and flags steps that should
 undergo trial answer generation based on similarity with previous steps.
 
 Usage:
-    python method/offline/embed_and_filter_steps.py \
-        --input-file questions_with_steps.json \
-        --output-file questions_with_steps_filtered.json \
-        --embedding-model /path/to/checkpoint-41605 \
-        --similarity-threshold 0.32 \
+    python puma/embed_and_filter_steps.py \
+        --input-file steps.json \
+        --output-file filtered_steps.json \
+        --embedding-model ZhishanQ/qwen3-embedding-redundancy-detector-0.6B \
+        --similarity-threshold 0.35 \
         --always-check-first-n 1 \
         --window-size 1 \
-        --trigger-mode current
+        --trigger-mode previous
 """
 
 import argparse
