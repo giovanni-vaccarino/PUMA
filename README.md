@@ -27,13 +27,14 @@ accuracy and retained-CoT quality.
 
 | Path | Description |
 | --- | --- |
-| `puma/` | Core offline pipeline (step segmentation → redundancy detection → trial-answer verification → truncated-prefix regeneration → statistics). |
-| `run_puma.py` | Entry point that runs the full offline pipeline. |
-| `configs/` + `run_from_config.sh` | Per-model hyperparameter configs (DS-7B/14B/32B, Nemotron-8B, Qwen3-30B-T) and a launcher. |
+| `puma/` | The offline pipeline stages: answer generation, step segmentation, redundancy detection, trial-answer verification, truncated-prefix regeneration, and statistics. |
+| `run_pipeline.sh` | Config-driven entry point that runs the full pipeline for one (model, dataset). |
+| `configs/` | Per-model hyperparameter configs (DS-7B/14B/32B, Nemotron-8B, Qwen3-30B-T; `_code` variants for code datasets). |
 | `baselines/` | Efficient-reasoning baselines: DEER, Dynasor, CCoT, CoD, NoThinking, Plan&Budget, Answer Consistency (+ Full-CoT vanilla). |
 | `puma_vl/` + `baselines_vl/` | Zero-shot vision-language variants of the pipeline and baselines. |
 | `train_rd/` | Recipe + scripts to train the Redundancy Detector, plus a data sample. |
 | `slurm/` | Generic SLURM template for running the pipeline on a cluster. |
+| `DATA_SCHEMA.md` | Schema of every JSON file the pipeline reads and writes. |
 
 ## ⚙️ Installation
 
@@ -47,13 +48,13 @@ the vision-language variants.
 
 **Models.** PUMA loads two models with vLLM at inference time:
 
-- a **reasoning model** that produces the trial and final answers
-  (e.g. `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`);
+- a **reasoning model** that generates the reasoning trace and the trial/final
+  answers (e.g. `deepseek-ai/DeepSeek-R1-Distill-Qwen-7B`);
 - the **Redundancy Detector**, our fine-tuned embedding model
   [`ZhishanQ/qwen3-embedding-redundancy-detector-0.6B`](https://huggingface.co/ZhishanQ/qwen3-embedding-redundancy-detector-0.6B)
   (downloaded automatically from the Hub).
 
-The trial-answer prompt formatting is implemented for the **DeepSeek-R1 /
+The prompt formatting is implemented for the **DeepSeek-R1 /
 DeepSeek-R1-Distill-Qwen, Qwen3, QwQ, and Nemotron** model families. To use a
 different family, add a branch in `puma/prompt_utils.py`.
 
@@ -61,87 +62,93 @@ different family, add a branch in `puma/prompt_utils.py`.
 requires [ms-swift](https://github.com/modelscope/ms-swift) and `flash-attn`,
 which are *not* in `env.yml`. They are not needed to run PUMA.
 
+**Code datasets only.** Evaluating code correctness (LiveCodeBench, Step 6)
+requires the external [LiveCodeBench](https://github.com/LiveCodeBench/LiveCodeBench)
+repo; clone it and set `LCB_REPO` to the checkout. This is not needed for the
+paper's math/GPQA results.
+
 ## 📦 Input format
 
-The offline pipeline starts from reasoning responses that have **already been
-generated**, so it does not call the reasoning model to produce them. First run
-your reasoning model over your questions (e.g. with vLLM), then save the outputs
-as `answers.json` in an experiment directory. The file is a JSON array with one
-object per question:
+The pipeline takes a benchmark file: a JSONL with one object per question
+holding the `question` and its ground-truth `answer`:
+
+```json
+{"question": "Compute ...", "answer": "42"}
+```
+
+From this, **Step 1a** runs your reasoning model (with vLLM) to produce the full
+chain-of-thought, written to `answers.json`; the rest of the pipeline operates on
+those responses. If you **already have** generated responses, drop them in as
+`<base_dir>/answers.json` (a JSON array of objects with the fields below) and
+Step 1a is skipped automatically:
 
 ```json
 [
   {
     "question": "Compute ...",
     "reasoning": "The model's full <think> reasoning text.",
-    "raw_response": "The full model response (reasoning + final answer); used as a fallback when `reasoning` is empty.",
+    "raw_response": "The full model response (reasoning + final answer); fallback when `reasoning` is empty.",
     "model_answer": "42",
     "ground_truth_answer": "42"
   }
 ]
 ```
 
-`question` and one of `reasoning` / `raw_response` are required. `model_answer`
-and `ground_truth_answer` are used to report accuracy before vs. after
-compression.
+See [`DATA_SCHEMA.md`](DATA_SCHEMA.md) for the schema of every intermediate file.
 
 ## 🚀 Run PUMA
 
-Run PUMA through a per-model config — the config sets the hyperparameters tuned
-for that model in the paper (RD / Loop Breaker / verified early exit):
+Run the whole pipeline for one (model, dataset) with `run_pipeline.sh`. The
+per-model config sets the hyperparameters tuned in the paper (Redundancy
+Detector / Loop Breaker / verified early exit):
 
 ```bash
-bash run_from_config.sh configs/DS-7B.conf /path/to/experiment \
-     deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+bash run_pipeline.sh configs/DS-7B.conf runs/ds7b_math500 \
+     deepseek-ai/DeepSeek-R1-Distill-Qwen-7B math-500 data/math-500_test.jsonl
 ```
 
-`run_from_config.sh` simply sources the config and calls `run_puma.py` with the
-corresponding flags. You can also call `run_puma.py` directly if you want to set
-every flag yourself (see [Main hyperparameters](#️-main-hyperparameters)):
+Arguments: `<config> <base_dir> <model> <dataset> [benchmark.jsonl]`. If
+`<base_dir>/answers.json` already exists, the benchmark argument can be omitted
+and answer generation is skipped.
 
-```bash
-python run_puma.py --base-dir /path/to/experiment \
-  --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
-  --embedding-model ZhishanQ/qwen3-embedding-redundancy-detector-0.6B \
-  --similarity-threshold 0.35 --consecutive-redundancy-stop 1 ...
-```
-
-**Multi-GPU.** vLLM tensor parallelism is auto-detected from the number of
-visible GPUs, so the larger models just need more GPUs made visible (e.g.
-`CUDA_VISIBLE_DEVICES=0,1` for DS-32B / Qwen3-30B-T); override with
-`--tensor-parallel-size`. To run on a cluster, adapt
+**Multi-GPU.** vLLM tensor-parallel size is auto-detected from the visible GPUs,
+so the larger models just need more GPUs made visible (e.g.
+`CUDA_VISIBLE_DEVICES=0,1` for DS-32B / Qwen3-30B-T). To run on a cluster, adapt
 [`slurm/puma_pipeline.slurm`](slurm/puma_pipeline.slurm).
 
-After the run, the experiment directory contains:
+After the run, `base_dir` contains (see [`DATA_SCHEMA.md`](DATA_SCHEMA.md)):
 
 | File | Description |
 | --- | --- |
-| `steps.json` | Input examples with extracted reasoning steps. |
-| `filtered_steps.json` | Step metadata from the redundancy detector. |
+| `answers.json` | Full chain-of-thought responses (Step 1a output / your input). |
+| `steps.json` | Responses with reasoning split into steps. |
+| `filtered_steps.json` | Per-step redundancy-detector decisions. |
 | `trial_answers.json` | Short trial answers and confidence scores. |
 | `final_candidates.json` | Selected stopping point for each question. |
-| `prefixed_answers.json` | Final compressed answers from truncated reasoning. |
+| `prefixed_answers.json` | Final compressed answers from the truncated prefix. |
+| `statistics.txt` | Accuracy, compression rate, and token reduction. |
 
-The final console report prints original accuracy, compressed accuracy, accuracy
+The final console report prints original vs. compressed accuracy, accuracy
 impact, compression rate, and token reduction.
 
 ## 🎛️ Main hyperparameters
 
-| Flag | Default | Description |
-| --- | ---: | --- |
-| `--similarity-threshold` | `0.35` | τ_sim: cosine-similarity threshold for redundancy detection. |
-| `--window-size` | `1` | k: number of previous reasoning steps compared by the detector. |
-| `--consecutive-redundancy-stop` | `3` | m: consecutive redundant steps before the Loop Breaker forces a stop (`0` disables it). |
-| `--consecutive-redundancy-min-step` | `50` | Late-stage activation: only detect consecutive redundancy after this step. |
-| `--forced-stop-min-confidence` | `0.8` | Weak minimum-confidence gate for the Loop Breaker. |
-| `--confidence-threshold` | `0.98` | λ: minimum confidence required for verified early exit. |
-| `--epsilon` | `0.03` | Maximum allowed confidence drop from the first verified candidate. |
-| `--consecutive` | `2` | L: consecutive matching checkpoints required to stop. |
-| `--logprobs-mode` | unset | Optional vLLM logprobs mode, e.g. `processed_logprobs`. |
+These are set in the `configs/*.conf` file (the paper values):
 
-Per-model values used in the paper are in `configs/` (the Loop Breaker `m` is
-tuned per model: 1 for DS-7B and Nemotron-8B, 3 for DS-14B, 4 for DS-32B, and 0
-for Qwen3-30B-T where it is disabled).
+| Config variable | Value | Description |
+| --- | ---: | --- |
+| `SIMILARITY_THRESHOLD` | `0.35` | τ_sim: cosine-similarity threshold for redundancy detection. |
+| `CONSECUTIVE_REDUNDANCY_STOP` | `1`–`4` | m: consecutive redundant steps before the Loop Breaker forces a stop (`0` disables it). |
+| `CONSECUTIVE_REDUNDANCY_MIN_STEP` | `50` | Late-stage activation: only detect consecutive redundancy after this step. |
+| `FORCED_STOP_MIN_CONFIDENCE` | `0.8` | Weak minimum-confidence gate for the Loop Breaker. |
+| `CONFIDENCE_THRESHOLD` | `0.98` | λ: minimum confidence required for verified early exit. |
+| `EPSILON` | `0.03` | ε: maximum allowed confidence drop from the first verified candidate. |
+| `CONSECUTIVE` | `2` | L: consecutive matching checkpoints required to stop. |
+| `MAX_TRIAL_TOKENS` | `30` | Token budget for each trial answer. |
+
+The Loop Breaker `m` (`CONSECUTIVE_REDUNDANCY_STOP`) is tuned per model: 1 for
+DS-7B and Nemotron-8B, 3 for DS-14B, 4 for DS-32B, and 0 for Qwen3-30B-T (where
+it is disabled). The window size (k) is 1.
 
 ## 📊 Baselines
 

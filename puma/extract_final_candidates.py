@@ -1,14 +1,10 @@
 import json
 import os
 import argparse
-import logging
-import sys
 from collections import defaultdict
 from multiprocessing import Pool
 from typing import List, Dict, Tuple
-from .prompt_utils import extract_boxed_answer
-
-logger = logging.getLogger(__name__)
+from prompt_utils import extract_boxed_answer, get_task_type, fuzzy_code_match
 
 
 def load_json(path: str) -> List[Dict]:
@@ -23,14 +19,14 @@ def save_json(data: List[Dict], path: str):
 
 def extract_answer(exp):
     """
-    Extract a math answer from a trial-answer entry.
-
-    The trial-answer prompt asks the model to continue from ``\\boxed``. Most
-    outputs therefore start with ``{answer}``, but this function also accepts a
-    complete ``\\boxed{answer}`` response.
+    Extract answer from trial answer entry.
+    For code tasks: uses final_answer directly (already extracted by gen_trial_answers).
+    For math/gpqa: tries \\boxed{...}, then first {...} with balanced braces.
     """
+    # For code tasks, final_answer is already the extracted code
     final_answer = exp.get("final_answer", "")
     if final_answer and not exp.get("model_response", ""):
+        # Skipped entry or code task entry with pre-extracted answer
         return final_answer
 
     model_response = exp.get("model_response", "")
@@ -68,6 +64,8 @@ def consecutive_same_answer_and_conf_delta_method(
     forced_stop_step: int = None,
     forced_stop_min_confidence: float = 0.0,
     min_stop_step: int = 0,
+    task_type: str = "math",
+    code_similarity_threshold: float = 0.8,
 ) -> Tuple[Dict, int, int, Dict]:
     """
     Stop when first point has confidence >= threshold,
@@ -113,7 +111,7 @@ def consecutive_same_answer_and_conf_delta_method(
     }
 
     # forced_stop_step acts as an UPPER BOUND (latest possible stop point)
-    # forced_stop_step caps the latest step considered (similar to min with normal logic).
+    # We use min(normal_stop_point, forced_stop_step)
     # Convert to 1-indexed for comparison with stopped_len
     forced_stop_len = (forced_stop_step + 1) if forced_stop_step is not None else None
 
@@ -155,7 +153,12 @@ def consecutive_same_answer_and_conf_delta_method(
                 next_ans = extract_answer(next_entry)
                 next_conf = next_entry["confidence"]
 
-                answers_match = first_ans and first_ans == next_ans
+                # Answer matching: fuzzy for code, exact for math/gpqa/nq
+                if task_type == "code":
+                    answers_match = first_ans and next_ans and fuzzy_code_match(
+                        first_ans, next_ans, code_similarity_threshold)
+                else:
+                    answers_match = first_ans and first_ans == next_ans
 
                 if not answers_match or next_conf < (first_conf - current_epsilon):
                     all_match = False
@@ -166,8 +169,8 @@ def consecutive_same_answer_and_conf_delta_method(
                 if min_stop_step > 0 and consecutive_entries[-1]["stopped_len"] < min_stop_step:
                     continue
 
-                # Use the last consecutive entry as the stopping point:
-                # this is where answer consistency has actually been verified.
+                # Use the LAST consecutive entry as stop point (simulating online:
+                # the model has already generated up to this step when consecutive is met)
                 chosen = consecutive_entries[-1]
                 # Count trial answers up to and including the last consecutive entry
                 last_stopped_len = consecutive_entries[-1]["stopped_len"]
@@ -198,7 +201,7 @@ def consecutive_same_answer_and_conf_delta_method(
             best_conf = max((e["confidence"] for e in nearby), default=None) if nearby else None
 
             if best_conf is not None and best_conf >= forced_stop_min_confidence:
-                # forced_stop_redundancy: stop directly at forced_stop_len.
+                # forced_stop_redundancy: stop directly at forced_stop_len (online simulation).
                 # Construct a synthetic entry — Step 4 only needs question_idx + stopped_len.
                 original_len = entries[0].get("original_len_reasoning_steps", 0) if entries else 0
                 generated_trial_answers = len([
@@ -260,6 +263,22 @@ def _process_question(args):
     chosen_copy["generated_trial_answers"] = generated_trial_answers
     chosen_copy["tokens_trial_answers"] = tokens_trial_answers
 
+    # Online simulation: exclude trial answer tokens from steps before min_stop_step
+    # (in online mode, we wouldn't generate trial answers before MSS)
+    min_stop_step = method_kwargs.get("min_stop_step", 0)
+    if min_stop_step > 0:
+        stop_len = chosen_copy.get("stopped_len", 0)
+        tokens_online = sum(
+            e.get("count_answer_tokens", 0)
+            for e in entries
+            if e["stopped_len"] <= stop_len
+            and not e.get("skipped", False)
+            and e["stopped_len"] >= min_stop_step
+        )
+        chosen_copy["tokens_trial_answers_online"] = tokens_online
+    else:
+        chosen_copy["tokens_trial_answers_online"] = tokens_trial_answers
+
     # Add stop metadata
     chosen_copy["stop_reason"] = stop_info["stop_reason"]
     chosen_copy["stop_confidence"] = stop_info["stop_confidence"]
@@ -286,13 +305,15 @@ def _process_question(args):
 
 def extract_final_candidates(
     results: List[Dict],
-    confidence_threshold: float = 0.98,
-    epsilon: float = 0.03,
+    confidence_threshold: float = 0.96,
+    epsilon: float = 0.05,
     consecutive: int = 2,
     forced_stop_min_confidence: float = 0.0,
     min_stop_step: int = 0,
     filtered_steps_data: List[Dict] = None,
     num_workers: int = 1,
+    task_type: str = "math",
+    code_similarity_threshold: float = 0.8,
 ) -> List[Dict]:
     """
     For each question_idx:
@@ -347,6 +368,8 @@ def extract_final_candidates(
         consecutive=consecutive,
         forced_stop_min_confidence=forced_stop_min_confidence,
         min_stop_step=min_stop_step,
+        task_type=task_type,
+        code_similarity_threshold=code_similarity_threshold,
     )
 
     tasks = [
@@ -355,7 +378,7 @@ def extract_final_candidates(
     ]
 
     if num_workers > 1 and len(tasks) > 1:
-        logger.info("Using %d workers for %d questions", num_workers, len(tasks))
+        print(f"  Using {num_workers} workers for {len(tasks)} questions...")
         with Pool(num_workers) as pool:
             selected = pool.map(_process_question, tasks)
     else:
@@ -383,14 +406,14 @@ def main():
     parser.add_argument(
         "--confidence-threshold",
         type=float,
-        default=0.98,
-        help="Minimum confidence for first point (default: 0.98)"
+        default=0.96,
+        help="Minimum confidence for first point (default: 0.96)"
     )
     parser.add_argument(
         "--epsilon",
         type=float,
-        default=0.03,
-        help="Maximum confidence drop allowed from first point (default: 0.03)"
+        default=0.05,
+        help="Maximum confidence drop allowed from first point (default: 0.05)"
     )
     parser.add_argument(
         "--consecutive",
@@ -402,7 +425,6 @@ def main():
         "--forced-stop-min-confidence",
         type=float,
         default=0.0,
-        dest="forced_stop_min_confidence",
         help="Minimum confidence gate for forced_stop_redundancy. "
              "If the best trial answer before forced_stop has confidence below this, "
              "skip forced_stop and use full reasoning instead. (default: 0.0 = no gate)"
@@ -411,7 +433,6 @@ def main():
         "--min-stop-step",
         type=int,
         default=0,
-        dest="min_stop_step",
         help="Minimum step count before allowing early stop. "
              "Steps before this are still evaluated but cannot trigger stopping. "
              "(default: 0 = no minimum)"
@@ -428,13 +449,20 @@ def main():
         default=0,
         help="Number of parallel workers (0=auto, 1=single-process)"
     )
-    args = parser.parse_args()
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[logging.StreamHandler(sys.stdout)],
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default="",
+        help="Dataset name (used to determine task type for code vs math)"
     )
+    parser.add_argument(
+        "--code-similarity-threshold",
+        type=float,
+        default=0.8,
+        help="Fuzzy match threshold for code answer consistency (default: 0.8)"
+    )
+
+    args = parser.parse_args()
 
     if args.workers == 0:
         try:
@@ -442,33 +470,37 @@ def main():
         except AttributeError:
             args.workers = min(os.cpu_count() or 1, 16)
 
-    logger.info("Loading data...")
+    print("Loading data...")
     results = load_json(args.input_file)
     total_entries = len(results)
     skipped_entries = sum(1 for r in results if r.get("skipped", False))
     generated_entries = total_entries - skipped_entries
-    logger.info("Loaded %d entries:", total_entries)
-    logger.info("  - Generated trial answers: %d", generated_entries)
-    logger.info("  - Skipped (embedding filter): %d", skipped_entries)
+    print(f"Loaded {total_entries} entries:")
+    print(f"  - Generated trial answers: {generated_entries}")
+    print(f"  - Skipped (embedding filter): {skipped_entries}")
 
     # Load filtered steps file for forced_stop_step handling
     filtered_steps_data = None
     if args.filtered_steps:
-        logger.info("Loading filtered steps from: %s", args.filtered_steps)
+        print(f"\nLoading filtered steps from: {args.filtered_steps}")
         filtered_steps_data = load_json(args.filtered_steps)
         forced_stop_count = sum(1 for q in filtered_steps_data if q.get("forced_stop_step") is not None)
-        logger.info("  - Questions with forced_stop_step: %d", forced_stop_count)
+        print(f"  - Questions with forced_stop_step: {forced_stop_count}")
 
-    logger.info("Extracting final candidates using:")
-    logger.info("  - Consecutive points: %d", args.consecutive)
-    logger.info("  - Confidence threshold: %s", args.confidence_threshold)
-    logger.info("  - Epsilon: %s", args.epsilon)
+    print(f"\nExtracting final candidates using:")
+    print(f"  - Consecutive points: {args.consecutive}")
+    print(f"  - Confidence threshold: {args.confidence_threshold}")
+    print(f"  - Epsilon: {args.epsilon}")
     if args.forced_stop_min_confidence > 0:
-        logger.info("  - Forced stop min confidence: %s", args.forced_stop_min_confidence)
+        print(f"  - Forced stop min confidence: {args.forced_stop_min_confidence}")
     else:
-        logger.info("  - Forced stop min confidence: disabled (0.0)")
+        print(f"  - Forced stop min confidence: disabled (0.0)")
     if args.min_stop_step > 0:
-        logger.info("  - Min stop step: %d", args.min_stop_step)
+        print(f"  - Min stop step: {args.min_stop_step}")
+
+    task_type = get_task_type(args.dataset) if args.dataset else "math"
+    if task_type == "code":
+        print(f"  - Task type: code (fuzzy match threshold: {args.code_similarity_threshold})")
 
     filtered = extract_final_candidates(
         results,
@@ -479,24 +511,26 @@ def main():
         min_stop_step=args.min_stop_step,
         filtered_steps_data=filtered_steps_data,
         num_workers=args.workers,
+        task_type=task_type,
+        code_similarity_threshold=args.code_similarity_threshold,
     )
 
     save_json(filtered, args.output_file)
 
-    logger.info("Extracted %d final candidates", len(filtered))
+    print(f"\nExtracted {len(filtered)} final candidates")
 
     # Print some statistics
     avg_trial_answers = sum(e["generated_trial_answers"] for e in filtered) / len(filtered) if filtered else 0
     avg_tokens_trial_answers = sum(e["tokens_trial_answers"] for e in filtered) / len(filtered) if filtered else 0
-    logger.info("Average trial answers generated: %.2f", avg_trial_answers)
-    logger.info("Average tokens in trial answers: %.2f", avg_tokens_trial_answers)
+    print(f"Average trial answers generated: {avg_trial_answers:.2f}")
+    print(f"Average tokens in trial answers: {avg_tokens_trial_answers:.2f}")
 
     # Stop reason distribution
     from collections import Counter
     stop_reasons = Counter(e.get("stop_reason", "unknown") for e in filtered)
-    logger.info("Stop reason distribution:")
+    print(f"\nStop reason distribution:")
     for reason, count in stop_reasons.most_common():
-        logger.info("  %s: %d/%d (%.1f%%)", reason, count, len(filtered), count / len(filtered) * 100)
+        print(f"  {reason}: {count}/{len(filtered)} ({count / len(filtered) * 100:.1f}%)")
 
 
 if __name__ == "__main__":

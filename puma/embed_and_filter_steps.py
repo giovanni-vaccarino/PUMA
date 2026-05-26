@@ -6,11 +6,11 @@ This script computes embeddings for reasoning steps and flags steps that should
 undergo trial answer generation based on similarity with previous steps.
 
 Usage:
-    python -m puma.embed_and_filter_steps \
-        --input-file steps.json \
-        --output-file filtered_steps.json \
-        --embedding-model /path/to/checkpoint \
-        --similarity-threshold 0.35 \
+    python method/offline/embed_and_filter_steps.py \
+        --input-file questions_with_steps.json \
+        --output-file questions_with_steps_filtered.json \
+        --embedding-model /path/to/checkpoint-41605 \
+        --similarity-threshold 0.32 \
         --always-check-first-n 1 \
         --window-size 1 \
         --trigger-mode current
@@ -23,16 +23,17 @@ import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, List, Dict
+from typing import List, Dict
 
 import numpy as np
 from tqdm import tqdm
+from vllm import LLM
 
 
 logger = logging.getLogger(__name__)
 
 
-def load_embedding_model(model_path: str) -> Any:
+def load_embedding_model(model_path: str) -> LLM:
     """
     Load embedding model using vLLM with runner='pooling'.
 
@@ -45,7 +46,6 @@ def load_embedding_model(model_path: str) -> Any:
         vLLM LLM instance configured for embedding
     """
     logger.info(f"Loading embedding model from: {model_path}")
-    from vllm import LLM
 
     model_path_obj = Path(model_path)
     adapter_config_path = model_path_obj / "adapter_config.json"
@@ -110,7 +110,7 @@ def load_embedding_model(model_path: str) -> Any:
     return llm
 
 
-def get_embeddings_batch(llm: Any, texts: List[str], max_chars: int = 30000) -> np.ndarray:
+def get_embeddings_batch(llm: LLM, texts: List[str], max_chars: int = 30000) -> np.ndarray:
     """
     Compute normalized embeddings using vLLM.
 
@@ -144,8 +144,8 @@ def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
 def embed_and_filter_steps(
     questions_data: List[Dict],
-    llm: Any,
-    similarity_threshold: float = 0.35,
+    llm: LLM,
+    similarity_threshold: float = 0.32,
     always_check_first_n: int = 1,
     window_size: int = 1,
     trigger_mode: str = "previous",
@@ -212,6 +212,8 @@ def embed_and_filter_steps(
     total_flagged = 0
     total_steps = 0
     total_consecutive_stops = 0
+    total_sim_time = 0.0
+    total_sim_pairs = 0
 
     for q_idx, question in enumerate(tqdm(questions_data, desc="Filtering steps")):
         steps = question.get("reasoning_steps", [])
@@ -228,6 +230,7 @@ def embed_and_filter_steps(
         step_embeddings = all_embeddings[start_idx:end_idx]
 
         # Compute max similarity with previous K steps for each step
+        t_sim_q_start = time.perf_counter()
         max_similarities = [None]  # First step has no previous
         for i in range(1, n_steps):
             if window_size <= 0:
@@ -242,6 +245,8 @@ def embed_and_filter_steps(
                 for j in range(start, i)
             ]
             max_similarities.append(max(sims) if sims else None)
+            total_sim_pairs += (i - start)
+        total_sim_time += time.perf_counter() - t_sim_q_start
 
         # Determine which steps should generate trial answers
         should_generate = [False] * n_steps
@@ -314,12 +319,15 @@ def embed_and_filter_steps(
 
     # Log statistics
     flag_rate = total_flagged / total_steps if total_steps > 0 else 0
-    logger.info("Filtering complete:")
+    logger.info(f"Filtering complete:")
     logger.info(f"  Total steps: {total_steps}")
     logger.info(f"  Flagged for trial: {total_flagged} ({flag_rate:.1%})")
     logger.info(f"  Skipped: {total_steps - total_flagged} ({1 - flag_rate:.1%})")
     if consecutive_redundancy_stop > 0:
         logger.info(f"  Consecutive redundancy stops: {total_consecutive_stops} questions")
+    logger.info(f"  Similarity computation: {total_sim_time:.4f}s for {total_sim_pairs} pairs (window_size={window_size})")
+    if total_sim_pairs > 0:
+        logger.info(f"  Avg similarity time per pair: {total_sim_time / total_sim_pairs * 1e6:.2f} us")
 
     return questions_data
 
@@ -362,8 +370,8 @@ def main():
     parser.add_argument(
         "--similarity-threshold",
         type=float,
-        default=0.35,
-        help="τ_sim: Similarity threshold for flagging (default: 0.35)",
+        default=0.32,
+        help="τ_sim: Similarity threshold for flagging (default: 0.32)",
     )
     parser.add_argument(
         "--always-check-first-n",
@@ -403,6 +411,13 @@ def main():
         default=None,
         help="Separate similarity threshold for Loop Breaker (defaults to --similarity-threshold if not set)",
     )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=32,
+        help="(Deprecated, ignored) vLLM handles batching internally",
+    )
+
     args = parser.parse_args()
 
     # Setup logging

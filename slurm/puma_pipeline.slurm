@@ -6,18 +6,18 @@
 # (account / partition) and adjust the environment-activation section to match
 # your cluster, then submit:
 #
-#   sbatch slurm/puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL>
+#   sbatch slurm/puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL> <DATASET> [BENCHMARK]
 #
 # Example:
 #   sbatch slurm/puma_pipeline.slurm configs/DS-7B.conf runs/ds7b_math500 \
-#          deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
+#          deepseek-ai/DeepSeek-R1-Distill-Qwen-7B math-500 data/math-500_test.jsonl
 #
-# <BASE_DIR> must already contain answers.json (the pre-generated reasoning
-# responses — see the repo README "Input format"). Outputs are written there.
+# If <BASE_DIR>/answers.json already exists, answer generation (Step 1a) is
+# skipped and BENCHMARK may be omitted. See the repo README for details.
 #
 # Resource hints (set via #SBATCH or sbatch flags):
 #   <= 14B models : 1 GPU,  ~110 GB RAM
-#   30B / 32B     : 2 GPUs, ~220 GB RAM   (run_puma.py picks up tensor parallel
+#   30B / 32B     : 2 GPUs, ~220 GB RAM   (tensor-parallel size is auto-detected
 #                                          from the visible GPU count)
 # =============================================================================
 #SBATCH --job-name=puma
@@ -34,9 +34,12 @@
 
 set -euo pipefail
 
-CONFIG="${1:?Usage: sbatch puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL>}"
-BASE_DIR="${2:?Usage: sbatch puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL>}"
-MODEL="${3:?Usage: sbatch puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL>}"
+USAGE="Usage: sbatch puma_pipeline.slurm <CONFIG> <BASE_DIR> <MODEL> <DATASET> [BENCHMARK]"
+CONFIG="${1:?$USAGE}"
+BASE_DIR="${2:?$USAGE}"
+MODEL="${3:?$USAGE}"
+DATASET="${4:?$USAGE}"
+BENCHMARK="${5:-}"
 
 # Submit from the repository root so the relative paths below resolve.
 PROJECT_DIR="${SLURM_SUBMIT_DIR:-$(pwd)}"
@@ -64,6 +67,6 @@ conda activate puma
 echo "Python: $(which python)"
 
 # --- Run ---------------------------------------------------------------------
-bash run_from_config.sh "$CONFIG" "$BASE_DIR" "$MODEL"
+bash run_pipeline.sh "$CONFIG" "$BASE_DIR" "$MODEL" "$DATASET" "$BENCHMARK"
 
 echo "=== Done @ $(date) ==="
