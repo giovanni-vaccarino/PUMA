@@ -14,9 +14,9 @@ Usage:
     python baselines_vl/run_answer_consistency_vl.py \
         --model Qwen/Qwen3-VL-8B-Thinking \
         --dataset mathvista \
-        --benchmark experiments_mdh/benchmark_vl/mathvista_test.jsonl \
-        --output-dir experiments_mdh/data_vl/baselines/answer_consistency/mathvista \
-        --vanilla-answers experiments_mdh/data_vl/step1a/mathvista/vanilla_results.json \
+        --benchmark data/benchmark_vl/mathvista_test.jsonl \
+        --output-dir runs/vl/baselines/answer_consistency/mathvista \
+        --vanilla-answers runs/vl/step1a/mathvista/vanilla_results.json \
         --limit 500
 """
 
@@ -35,6 +35,16 @@ for _p in [_PROJECT_ROOT, _VL_DIR, _OFFLINE_DIR]:
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Ensure NLTK's sentence-tokenizer data is available (needed by sent_tokenize).
+import nltk
+for _pkg in ("punkt", "punkt_tab"):
+    try:
+        nltk.data.find(f"tokenizers/{_pkg}")
+    except LookupError:
+        try:
+            nltk.download(_pkg, quiet=True)
+        except Exception:
+            pass
 from nltk import sent_tokenize
 from vllm import LLM, SamplingParams
 from transformers import AutoProcessor, GenerationConfig
