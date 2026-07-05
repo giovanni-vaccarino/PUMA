@@ -1,18 +1,17 @@
 import os
 import json
 import re
+import string
 import logging
 import argparse
 import sys
-from typing import List
+from typing import List, Tuple
 from dataclasses import dataclass
 from multiprocessing import Pool
 
 
 @dataclass
 class Chunk:
-    """A paragraph-level reasoning chunk with light semantic metadata."""
-
     text: str
     is_enumerated: bool
     first_word: str
@@ -26,10 +25,12 @@ def separate_steps(
 ) -> List[str]:
     """
     Split reasoning into coherent thought steps based on semantic transitions.
-
-    PUMA consumes medium-sized reasoning prefixes. This splitter starts from
-    paragraph breaks, then merges tiny or semantically connected chunks so each
-    checkpoint is meaningful enough for trial-answer generation.
+    
+    Key improvements:
+    - Detects semantic transitions (doubt->resolution, setup->calculation)
+    - Groups related content (repeated doubts, verification chains)
+    - Preserves enumerated steps as natural boundaries
+    - Uses content analysis over pure delimiter counting
     """
     
     # Phase 1: Split into initial chunks (paragraphs)
@@ -240,10 +241,11 @@ def main():
         except AttributeError:
             args.workers = min(os.cpu_count() or 1, 16)
 
+    os.makedirs("logs", exist_ok=True)
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[logging.StreamHandler(sys.stdout)]
+        handlers=[logging.FileHandler("logs/populate_steps.log"), logging.StreamHandler(sys.stdout)]
     )
 
     data = load_json_or_jsonl(args.input_json)
@@ -257,7 +259,7 @@ def main():
     else:
         all_steps = [_process_one_entry(entry) for entry in data]
 
-    for entry, steps in zip(data, all_steps):
+    for idx, (entry, steps) in enumerate(zip(data, all_steps), start=1):
         entry["reasoning_steps"] = steps
     logging.info(f"Processed {len(data)} entries, step counts: min={min(len(s) for s in all_steps)}, max={max(len(s) for s in all_steps)}")
 
