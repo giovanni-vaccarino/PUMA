@@ -87,7 +87,7 @@ Step 1a is skipped automatically:
   {
     "question": "Compute ...",
     "reasoning": "The model's full <think> reasoning text.",
-    "raw_response": "The full model response (reasoning + final answer); fallback when `reasoning` is empty.",
+    "raw_response": "The answer text after </think> only, NOT including the reasoning (the two are disjoint; token stats sum them). Falls back to this for segmentation when reasoning is empty.",
     "model_answer": "42",
     "ground_truth_answer": "42"
   }
@@ -176,7 +176,18 @@ Pass `--vanilla-answers <file>` to reuse precomputed Full-CoT answers, or
 metric definitions (CR / CRT).
 
 Zero-shot vision-language variants of PUMA and the baselines are in `puma_vl/`
-and `baselines_vl/`.
+and `baselines_vl/`. Run the VL pipeline just like the text one, via
+`run_pipeline_vl.sh` (it reuses the modality-independent stages — step
+segmentation, redundancy detection, stop decision — from `puma/`):
+
+```bash
+bash run_pipeline_vl.sh configs/DS-7B.conf runs/qwenvl8b_mathvista \
+     Qwen/Qwen3-VL-8B-Thinking mathvista data/mathvista_test.jsonl
+```
+
+VL benchmarks (questions + image paths) can be built with
+`python puma_vl/dataset_utils.py --dataset <dataset>` (mathvista, mathvision,
+mmmu-pro).
 
 ## 🧠 Train the Redundancy Detector
 

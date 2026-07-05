@@ -35,7 +35,7 @@ statistics_puma.py         → statistics.txt                   (Step 5)
 |-------|------|-------------|
 | `question` | string | The original question text |
 | `reasoning` | string | The model's `<think>` reasoning text |
-| `raw_response` | string | Complete raw model response (reasoning + answer); fallback when `reasoning` is empty |
+| `raw_response` | string | The answer text after `</think>` **only** — it does *not* include `reasoning` (the two are disjoint; token stats sum them, so do not duplicate the reasoning here). Used as the segmentation fallback when `reasoning` is empty |
 | `model_answer` | string | The model's extracted answer |
 | `ground_truth_answer` | string | The correct answer (used for accuracy) |
 
@@ -54,7 +54,7 @@ statistics_puma.py         → statistics.txt                   (Step 5)
 | `ground_truth_answer` | string | The correct answer |
 | `model_answer` | string | The model's original answer |
 | `reasoning` | string | Full reasoning text (before splitting) |
-| `raw_response` | string | Complete raw model response |
+| `raw_response` | string | Answer text after `</think>` only (disjoint from `reasoning`) |
 
 ---
 
