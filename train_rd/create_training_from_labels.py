@@ -8,7 +8,7 @@ This script converts similarity labels into training data format:
 - negative_messages: steps that are NOVEL (result=1) relative to anchor
 
 Usage:
-    python scripts/create_training_from_labels.py \
+    python train_rd/create_training_from_labels.py \
         --answers_dir data/answers \
         --labels_dir data/labels \
         --output_dir data/v8_all_models

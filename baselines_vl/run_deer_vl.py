@@ -12,8 +12,8 @@ Usage:
     python baselines_vl/run_deer_vl.py \
         --model Qwen/Qwen3-VL-8B-Thinking \
         --dataset mathvista \
-        --benchmark experiments_mdh/benchmark_vl/mathvista_test.jsonl \
-        --output-dir experiments_mdh/data_vl/baselines/deer/mathvista \
+        --benchmark data/benchmark_vl/mathvista_test.jsonl \
+        --output-dir runs/vl/baselines/deer/mathvista \
         --limit 500
 """
 

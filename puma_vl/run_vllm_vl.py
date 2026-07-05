@@ -9,8 +9,8 @@ Usage:
     python puma_vl/run_vllm_vl.py \
         --model Qwen/Qwen3-VL-8B-Thinking \
         --dataset mathvista \
-        --dataset_path experiments_mdh/benchmark_vl/mathvista_test.jsonl \
-        --output_path experiments_mdh/data_vl/answers/Qwen3-VL-8B-T_mathvista_answers.json \
+        --dataset_path data/benchmark_vl/mathvista_test.jsonl \
+        --output_path runs/vl/answers/Qwen3-VL-8B-T_mathvista_answers.json \
         --max_tokens 32768 --seed 42
 """
 

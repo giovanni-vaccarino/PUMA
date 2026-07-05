@@ -9,7 +9,7 @@ Combines:
 Then filters out samples with 0 negatives.
 
 Usage:
-    python scripts/create_v9_corrected_filt.py
+    python train_rd/create_v9_corrected_filt.py
 """
 
 import json

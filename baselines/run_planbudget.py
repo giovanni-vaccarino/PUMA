@@ -13,7 +13,7 @@ Based on: "Plan-and-Budget: Effective and Efficient Test-Time Scaling on LLM Rea
 Usage:
     python -m baselines.run_planbudget \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "experiments_mdh/benchmark/aime24_test.jsonl" \
+        --benchmark "data/aime24_test.jsonl" \
         --output-dir "data/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
         --vanilla-answers "data/baselines/vanilla/.../vanilla_answers.jsonl" \
         --dataset "aime24"
@@ -21,7 +21,7 @@ Usage:
     # Skip inference, only run evaluation:
     python -m baselines.run_planbudget \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "experiments_mdh/benchmark/aime24_test.jsonl" \
+        --benchmark "data/aime24_test.jsonl" \
         --output-dir "data/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
         --eval-only
 """

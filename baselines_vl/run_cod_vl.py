@@ -13,8 +13,8 @@ Usage:
     python baselines_vl/run_cod_vl.py \
         --model Qwen/Qwen3-VL-8B-Thinking \
         --dataset mathvista \
-        --benchmark experiments_mdh/benchmark_vl/mathvista_test.jsonl \
-        --output-dir experiments_mdh/data_vl/baselines/cod/mathvista \
+        --benchmark data/benchmark_vl/mathvista_test.jsonl \
+        --output-dir runs/vl/baselines/cod/mathvista \
         --limit 500
 """
 

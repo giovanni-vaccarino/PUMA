@@ -12,8 +12,8 @@ Usage:
     python baselines_vl/run_think_token_adj_vl.py \
         --model Qwen/Qwen3-VL-8B-Thinking \
         --dataset mathvista \
-        --benchmark experiments_mdh/benchmark_vl/mathvista_test.jsonl \
-        --output-dir experiments_mdh/data_vl/baselines/think_token_adj/mathvista \
+        --benchmark data/benchmark_vl/mathvista_test.jsonl \
+        --output-dir runs/vl/baselines/think_token_adj/mathvista \
         --limit 500
 """
 

@@ -11,8 +11,8 @@ Output: JSONL file + images directory, compatible with the VL pipeline.
 
 Usage:
     python puma_vl/dataset_utils.py --dataset mathvista \
-        --output-dir experiments_mdh/benchmark_vl \
-        --images-dir experiments_mdh/images
+        --output-dir data/benchmark_vl \
+        --images-dir data/images
     python puma_vl/dataset_utils.py --dataset mathvision ...
     python puma_vl/dataset_utils.py --dataset mmmu-pro ...
     python puma_vl/dataset_utils.py --dataset all ...
@@ -277,10 +277,10 @@ def main():
                         choices=["mathvista", "mathvision", "mmmu-pro", "all"],
                         help="Which dataset to prepare")
     parser.add_argument("--output-dir", type=str,
-                        default="experiments_mdh/benchmark_vl",
+                        default="data/benchmark_vl",
                         help="Directory for output JSONL files")
     parser.add_argument("--images-dir", type=str,
-                        default="experiments_mdh/images",
+                        default="data/images",
                         help="Directory for saved images")
     parser.add_argument("--limit", type=int, default=-1,
                         help="Max samples per dataset (-1 = all). "

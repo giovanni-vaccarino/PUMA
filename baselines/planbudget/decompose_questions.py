@@ -12,7 +12,7 @@ Based on: "Plan-and-Budget: Effective and Efficient Test-Time Scaling on LLM Rea
 Usage:
     python -m baselines.planbudget.decompose_questions \
         --planner-model "meta-llama/Llama-3.1-8B-Instruct" \
-        --benchmark "experiments_mdh/benchmark/math-500_test.jsonl" \
+        --benchmark "data/math-500_test.jsonl" \
         --output "data/baselines/planbudget/plans/math-500_plans.jsonl" \
         --dataset "math-500"
 """
