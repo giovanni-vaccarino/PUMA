@@ -242,8 +242,12 @@ TASK_TYPE=$("$PY" -c "import sys; sys.path.insert(0, 'puma'); from prompt_utils 
 if [ "$TASK_TYPE" = "code" ]; then
     if [ -z "$BENCHMARK_FILE" ]; then
         echo ">>> Step 6: skipped (code dataset but no benchmark file given)"
+    elif [ -z "${LCB_REPO:-}" ]; then
+        echo ">>> Step 6: skipped (code dataset but LCB_REPO is not set)."
+        echo "           Clone https://github.com/LiveCodeBench/LiveCodeBench and run"
+        echo "           'export LCB_REPO=/path/to/LiveCodeBench' to enable code-correctness eval."
     else
-        echo ">>> Step 6: LiveCodeBench evaluation (requires LCB_REPO; see puma/eval_livecodebench.py)"
+        echo ">>> Step 6: LiveCodeBench evaluation (LCB_REPO=$LCB_REPO)"
         "$PY" puma/eval_livecodebench.py \
             --predictions "$ANSWERS" --benchmark "$BENCHMARK_FILE" \
             --output "${BASE_DIR}/eval_original.json" --num-workers 30 --timeout 6

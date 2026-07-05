@@ -17,16 +17,26 @@ def save_json(data: List[Dict], path: str):
         json.dump(data, f, indent=2)
 
 
-def extract_answer(exp):
+def extract_answer(exp, task_type="math"):
     """
-    Extract answer from trial answer entry.
-    For code tasks: uses final_answer directly (already extracted by gen_trial_answers).
+    Extract answer from a trial-answer entry.
+
+    For code tasks: return final_answer directly (already extracted by
+    gen_trial_answers via extract_trial_code). The raw model_response is code and
+    must NOT be run through the \\boxed / first-brace extractor, or an ordinary
+    Python brace (dict/set literal, f-string, format spec) would be mistaken for
+    the answer.
+
     For math/gpqa: tries \\boxed{...}, then first {...} with balanced braces.
     """
-    # For code tasks, final_answer is already the extracted code
     final_answer = exp.get("final_answer", "")
+
+    # Code tasks: final_answer is the pre-extracted code; never brace-extract it.
+    if task_type == "code":
+        return final_answer or ""
+
+    # Skipped entry (no model_response) that carries a pre-extracted answer.
     if final_answer and not exp.get("model_response", ""):
-        # Skipped entry or code task entry with pre-extracted answer
         return final_answer
 
     model_response = exp.get("model_response", "")
@@ -128,7 +138,7 @@ def consecutive_same_answer_and_conf_delta_method(
         current_epsilon = epsilon
 
         if first["confidence"] >= current_threshold:
-            first_ans = extract_answer(first)
+            first_ans = extract_answer(first, task_type)
             first_conf = first["confidence"]
 
             # Find next consecutive-1 non-skipped entries (within forced_stop_len bound)
@@ -150,7 +160,7 @@ def consecutive_same_answer_and_conf_delta_method(
             all_match = True
             for j in range(1, consecutive):
                 next_entry = consecutive_entries[j]
-                next_ans = extract_answer(next_entry)
+                next_ans = extract_answer(next_entry, task_type)
                 next_conf = next_entry["confidence"]
 
                 # Answer matching: fuzzy for code, exact for math/gpqa/nq
