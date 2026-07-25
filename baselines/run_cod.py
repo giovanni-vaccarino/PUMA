@@ -13,21 +13,21 @@ Based on: "Chain of Draft: Thinking Faster by Writing Less"
 Usage:
     python -m baselines.run_cod \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/cod/aime24"
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/cod/aime24"
 
     # Use existing vanilla answers:
     python -m baselines.run_cod \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/cod/aime24" \
-        --vanilla-answers "data/baselines/vanilla/aime24/predictions.jsonl"
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/cod/aime24" \
+        --vanilla-answers "runs/baselines/vanilla/aime24/predictions.jsonl"
 
     # Skip inference, only run evaluation:
     python -m baselines.run_cod \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/cod/aime24" \
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/cod/aime24" \
         --eval-only
 """
 
@@ -58,14 +58,14 @@ Examples:
     # Run on AIME24
     python -m baselines.run_cod \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/cod/aime24"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/cod/aime24"
 
     # Skip inference, only evaluate
     python -m baselines.run_cod \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/cod/aime24" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/cod/aime24" \\
         --eval-only
         """
     )

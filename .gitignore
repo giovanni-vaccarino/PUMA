@@ -8,6 +8,12 @@ venv/
 
 logs/
 wandb/
+runs/
+
+# Downloaded / generated data. The benchmarks in data/*.jsonl are tracked.
+data/benchmark_vl/
+data/images/
+data/rd/
 
 answers.json
 steps.json

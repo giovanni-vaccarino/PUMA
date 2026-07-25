@@ -157,7 +157,7 @@ def calculate_average_max_prob_from_logprobs(logprobs_list, policy='avg2') -> fl
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_name_or_path', type=str, default="./DeepSeek-R1-Distill-Qwen-14B/")
-    parser.add_argument('--dataset_dir', type=str, default="../data/")
+    parser.add_argument('--dataset_dir', type=str, default="data/")
     parser.add_argument("--dtype", type=str, default="bfloat16")
     parser.add_argument("--max-model-len", "--model-context-len", type=int, default=40000, dest="model_context_len") # max-model-len for vllm, should be longer than max_generated_tokens.
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)

@@ -14,9 +14,9 @@ Vanilla answers must be precomputed separately using vanilla_generation.py.
 Usage:
     python -m baselines.answer_consistency.online_answer_consistency \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/answer_consistency/aime24" \
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl" \
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/answer_consistency/aime24" \
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl" \
         --threshold 3
 """
 
@@ -79,16 +79,16 @@ Examples:
     # Run on AIME24 benchmark
     python -m baselines.answer_consistency.online_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24" \\
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24" \\
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl"
 
     # With custom threshold
     python -m baselines.answer_consistency.online_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24" \\
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24" \\
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl" \\
         --threshold 5
         """
     )

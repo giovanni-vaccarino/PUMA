@@ -15,8 +15,8 @@ Baseline methods for token-efficient reasoning in LLMs. Each baseline outputs **
 ```bash
 python -m baselines.run_think_token_adjustment \
     --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-    --benchmark "../data/aime24_test.jsonl" \
-    --output-dir "data/baselines/think_token_adjustment/aime24"
+    --benchmark "data/aime24_test.jsonl" \
+    --output-dir "runs/baselines/think_token_adjustment/aime24"
 ```
 
 **Note:** For this method, CR = CRT (no trial answers).
@@ -26,8 +26,8 @@ python -m baselines.run_think_token_adjustment \
 ```bash
 python -m baselines.run_answer_consistency \
     --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-    --benchmark "../data/aime24_test.jsonl" \
-    --output-dir "data/baselines/answer_consistency/aime24"
+    --benchmark "data/aime24_test.jsonl" \
+    --output-dir "runs/baselines/answer_consistency/aime24"
 ```
 
 **Options:**
@@ -40,9 +40,9 @@ python -m baselines.run_answer_consistency \
 ```bash
 python -m baselines.run_deer \
     --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-    --dataset_dir ../data \
+    --dataset_dir data \
     --dataset aime24 \
-    --output-dir "data/baselines/deer/aime24"
+    --output-dir "runs/baselines/deer/aime24"
 ```
 
 **Options:**

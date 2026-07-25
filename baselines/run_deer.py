@@ -7,9 +7,9 @@ Run the full DEER baseline and compute accuracy, CR, and CRT.
 Usage:
     python -m baselines.run_deer \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --dataset_dir "../data" \
+        --dataset_dir "data" \
         --dataset "aime24" \
-        --output-dir "data/baselines/deer/aime24"
+        --output-dir "runs/baselines/deer/aime24"
 
 Pipeline:
     1. Generate vanilla answers (vanilla_generation.py — full reasoning)
@@ -44,40 +44,40 @@ Examples:
     # Run on AIME24
     python -m baselines.run_deer \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --dataset_dir "../data" \\
+        --dataset_dir "data" \\
         --dataset "aime24" \\
-        --output-dir "data/baselines/deer/aime24"
+        --output-dir "runs/baselines/deer/aime24"
 
     # With custom threshold and policy
     python -m baselines.run_deer \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --dataset_dir "../data" \\
+        --dataset_dir "data" \\
         --dataset "aime24" \\
-        --output-dir "data/baselines/deer/aime24" \\
+        --output-dir "runs/baselines/deer/aime24" \\
         --threshold 0.90 --policy avg1
 
     # Skip inference, only evaluate
     python -m baselines.run_deer \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --dataset_dir "../data" \\
+        --dataset_dir "data" \\
         --dataset "aime24" \\
-        --output-dir "data/baselines/deer/aime24" \\
+        --output-dir "runs/baselines/deer/aime24" \\
         --eval-only
 
     # Use precomputed vanilla answers
     python -m baselines.run_deer \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --dataset_dir "../data" \\
+        --dataset_dir "data" \\
         --dataset "aime24" \\
-        --output-dir "data/baselines/deer/aime24" \\
-        --vanilla-answers "data/baselines/deer/aime24/vanilla_answers.jsonl"
+        --output-dir "runs/baselines/deer/aime24" \\
+        --vanilla-answers "runs/baselines/deer/aime24/vanilla_answers.jsonl"
         """
     )
 
     parser.add_argument("--model", type=str, required=True,
                         help="HuggingFace model identifier")
-    parser.add_argument("--dataset_dir", type=str, default="../data",
-                        help="Root directory containing dataset files (default: ../data)")
+    parser.add_argument("--dataset_dir", type=str, default="data",
+                        help="Root directory containing dataset files (default: data)")
     parser.add_argument("--dataset", type=str, default="aime24",
                         help="Dataset name, expects {dataset_dir}/{dataset}_test.jsonl")
     parser.add_argument("--output-dir", type=str, required=True,

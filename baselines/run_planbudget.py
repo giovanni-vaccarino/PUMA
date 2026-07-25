@@ -14,15 +14,15 @@ Usage:
     python -m baselines.run_planbudget \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
         --benchmark "data/aime24_test.jsonl" \
-        --output-dir "data/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
-        --vanilla-answers "data/baselines/vanilla/.../vanilla_answers.jsonl" \
+        --output-dir "runs/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
+        --vanilla-answers "runs/baselines/vanilla/.../vanilla_answers.jsonl" \
         --dataset "aime24"
 
     # Skip inference, only run evaluation:
     python -m baselines.run_planbudget \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
         --benchmark "data/aime24_test.jsonl" \
-        --output-dir "data/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
+        --output-dir "runs/baselines/planbudget/DeepSeek-R1-Distill-Qwen-7B/aime24" \
         --eval-only
 """
 
@@ -75,7 +75,7 @@ def main():
     vanilla_file = Path(args.vanilla_answers) if args.vanilla_answers else output_dir / "vanilla_answers.jsonl"
 
     # Plans are shared across reasoning models (same planner + dataset = same plans)
-    plans_dir = Path("data/baselines/planbudget/plans")
+    plans_dir = Path("runs/baselines/planbudget/plans")
     plans_dir.mkdir(parents=True, exist_ok=True)
     plans_file = plans_dir / f"{args.dataset}_plans.jsonl"
 

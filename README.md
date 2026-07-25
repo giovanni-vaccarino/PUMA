@@ -30,6 +30,7 @@ accuracy and retained-CoT quality.
 | `puma/` | The offline pipeline stages: answer generation, step segmentation, redundancy detection, trial-answer verification, truncated-prefix regeneration, and statistics. |
 | `run_pipeline.sh` | Config-driven entry point that runs the full pipeline for one (model, dataset). |
 | `configs/` | Per-model hyperparameter configs (DS-7B/14B/32B, Nemotron-8B, Qwen3-30B-T; `_code` variants for code datasets). |
+| `data/` | The five evaluation benchmarks used in the paper (AIME24/25, MATH-500, GPQA-Diamond, OlympiadBench). |
 | `baselines/` | Efficient-reasoning baselines: DEER, Dynasor, CCoT, CoD, NoThinking, Plan&Budget, Answer Consistency (+ Full-CoT vanilla). |
 | `puma_vl/` + `baselines_vl/` | Zero-shot vision-language variants of the pipeline and baselines. |
 | `train_rd/` | Recipe + scripts to train the Redundancy Detector, plus a data sample. |
@@ -75,6 +76,10 @@ holding the `question` and its ground-truth `answer`:
 ```json
 {"question": "Compute ...", "answer": "42"}
 ```
+
+The five benchmarks evaluated in the paper ship in [`data/`](data/README.md):
+`aime24`, `aime25`, `math-500`, `gpqa-diamond`, `olympiadbench`. Any other
+benchmark works as long as it follows the format above.
 
 From this, **Step 1a** runs your reasoning model (with vLLM) to produce the full
 chain-of-thought, written to `answers.json`; the rest of the pipeline operates on
@@ -178,16 +183,22 @@ metric definitions (CR / CRT).
 Zero-shot vision-language variants of PUMA and the baselines are in `puma_vl/`
 and `baselines_vl/`. Run the VL pipeline just like the text one, via
 `run_pipeline_vl.sh` (it reuses the modality-independent stages — step
-segmentation, redundancy detection, stop decision — from `puma/`):
+segmentation, redundancy detection, stop decision — from `puma/`).
+
+The VL benchmarks are not shipped in `data/` (the images are large), so build
+them first — this downloads the dataset and writes the questions to
+`data/benchmark_vl/` and the images to `data/images/`:
+
+```bash
+python puma_vl/dataset_utils.py --dataset mathvista   # or mathvision, mmmu-pro
+```
+
+Then run the pipeline:
 
 ```bash
 bash run_pipeline_vl.sh configs/DS-7B.conf runs/qwenvl8b_mathvista \
-     Qwen/Qwen3-VL-8B-Thinking mathvista data/mathvista_test.jsonl
+     Qwen/Qwen3-VL-8B-Thinking mathvista data/benchmark_vl/mathvista_test.jsonl
 ```
-
-VL benchmarks (questions + image paths) can be built with
-`python puma_vl/dataset_utils.py --dataset <dataset>` (mathvista, mathvision,
-mmmu-pro).
 
 ## 🧠 Train the Redundancy Detector
 

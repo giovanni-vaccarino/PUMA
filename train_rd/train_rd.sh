@@ -14,7 +14,7 @@
 #   bash train_rd/train_rd.sh <data_dir> <output_dir> [nproc_per_node]
 #
 # Example:
-#   bash train_rd/train_rd.sh data/v9_corrected_filt output/rd_full 3
+#   bash train_rd/train_rd.sh data/rd/v9_corrected_filt output/rd_full 3
 # =============================================================================
 set -euo pipefail
 

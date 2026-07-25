@@ -15,8 +15,8 @@ Output format is compatible with check_accuracy_baseline.py (DEER branch).
 Usage:
     python -m baselines.dynasor.eval_dynasor \
         --model deepseek-ai/DeepSeek-R1-Distill-Qwen-7B \
-        --benchmark ../data/aime24_test.jsonl \
-        --output-dir data/baselines/dynasor/aime24 \
+        --benchmark data/aime24_test.jsonl \
+        --output-dir runs/baselines/dynasor/aime24 \
         --effort mid
 """
 

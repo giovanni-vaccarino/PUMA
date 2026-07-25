@@ -10,8 +10,8 @@ Run the full Answer Consistency baseline pipeline:
 Usage:
     python -m baselines.run_answer_consistency \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/answer_consistency/aime24"
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/answer_consistency/aime24"
 """
 
 import argparse
@@ -42,29 +42,29 @@ Examples:
     # Run on AIME24
     python -m baselines.run_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24"
 
     # With custom threshold
     python -m baselines.run_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24" \\
         --threshold 5
 
     # Skip inference, only evaluate
     python -m baselines.run_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24" \\
         --eval-only
 
     # Use precomputed vanilla answers
     python -m baselines.run_answer_consistency \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/answer_consistency/aime24" \\
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/answer_consistency/aime24" \\
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl"
         """
     )
     

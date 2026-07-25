@@ -9,9 +9,9 @@ This script converts similarity labels into training data format:
 
 Usage:
     python train_rd/create_training_from_labels.py \
-        --answers_dir data/answers \
-        --labels_dir data/labels \
-        --output_dir data/v8_all_models
+        --answers_dir data/rd/answers \
+        --labels_dir data/rd/labels \
+        --output_dir data/rd/v8_all_models
 """
 
 import argparse
@@ -154,11 +154,11 @@ def create_training_samples(answers: list, labels: list, max_negatives: int = 50
 
 def main():
     parser = argparse.ArgumentParser(description="Create training data from labels")
-    parser.add_argument("--answers_dir", type=str, default="data/answers",
+    parser.add_argument("--answers_dir", type=str, default="data/rd/answers",
                         help="Directory containing answers files")
-    parser.add_argument("--labels_dir", type=str, default="data/labels",
+    parser.add_argument("--labels_dir", type=str, default="data/rd/labels",
                         help="Directory containing labels files")
-    parser.add_argument("--output_dir", type=str, default="data/v8_all_models",
+    parser.add_argument("--output_dir", type=str, default="data/rd/v8_all_models",
                         help="Output directory for training data")
     parser.add_argument("--max_negatives", type=int, default=50,
                         help="Maximum negatives per sample (default: 50)")

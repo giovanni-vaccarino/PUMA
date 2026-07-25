@@ -7,7 +7,7 @@ but with a robust single-level multiprocessing wrapper to avoid hangs.
 
 Usage:
     python scripts/eval_livecodebench.py \
-        --predictions data/baselines/vanilla_code/DeepSeek-R1-Distill-Qwen-7B/livecodebench/vanilla_answers.jsonl \
+        --predictions runs/baselines/vanilla_code/DeepSeek-R1-Distill-Qwen-7B/livecodebench/vanilla_answers.jsonl \
         [--num-workers 8] [--timeout 6]
 """
 

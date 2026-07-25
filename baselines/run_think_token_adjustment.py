@@ -11,15 +11,15 @@ A single script to run the full Think Token Adjustment baseline pipeline:
 Usage:
     python -m baselines.run_think_token_adjustment \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/think_token_adjustment/aime24"
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/think_token_adjustment/aime24"
 
     # Use precomputed vanilla answers:
     python -m baselines.run_think_token_adjustment \
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \
-        --benchmark "../data/aime24_test.jsonl" \
-        --output-dir "data/baselines/think_token_adjustment/aime24" \
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl"
+        --benchmark "data/aime24_test.jsonl" \
+        --output-dir "runs/baselines/think_token_adjustment/aime24" \
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl"
 """
 
 import argparse
@@ -55,29 +55,29 @@ Examples:
     # Run on AIME24 with DeepSeek-R1-Distill-Qwen-7B
     python -m baselines.run_think_token_adjustment \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/think_token_adjustment/aime24"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/think_token_adjustment/aime24"
 
     # Run with a limit on number of samples (for testing)
     python -m baselines.run_think_token_adjustment \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/think_token_adjustment/aime24" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/think_token_adjustment/aime24" \\
         --limit 5
 
     # Use precomputed vanilla answers
     python -m baselines.run_think_token_adjustment \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/think_token_adjustment/aime24" \\
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl"
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/think_token_adjustment/aime24" \\
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl"
 
     # Skip inference and only run evaluation (if predictions already exist)
     python -m baselines.run_think_token_adjustment \\
         --model "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B" \\
-        --benchmark "../data/aime24_test.jsonl" \\
-        --output-dir "data/baselines/think_token_adjustment/aime24" \\
-        --vanilla-answers "data/baselines/vanilla/aime24.jsonl" \\
+        --benchmark "data/aime24_test.jsonl" \\
+        --output-dir "runs/baselines/think_token_adjustment/aime24" \\
+        --vanilla-answers "runs/baselines/vanilla/aime24.jsonl" \\
         --eval-only
         """
     )
@@ -85,7 +85,7 @@ Examples:
     parser.add_argument("--model", type=str, required=True,
                         help="HuggingFace model identifier (e.g., deepseek-ai/DeepSeek-R1-Distill-Qwen-7B)")
     parser.add_argument("--benchmark", type=str, required=True,
-                        help="Path to benchmark JSONL file (e.g., ../data/aime24_test.jsonl)")
+                        help="Path to benchmark JSONL file (e.g., data/aime24_test.jsonl)")
     parser.add_argument("--output-dir", type=str, required=True,
                         help="Directory to save all output files")
     parser.add_argument("--limit", type=int, default=10000,

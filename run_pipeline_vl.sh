@@ -29,7 +29,7 @@
 #
 # Example:
 #   bash run_pipeline_vl.sh configs/DS-7B.conf runs/qwenvl8b_mathvista \
-#        Qwen/Qwen3-VL-8B-Thinking mathvista data/mathvista_test.jsonl
+#        Qwen/Qwen3-VL-8B-Thinking mathvista data/benchmark_vl/mathvista_test.jsonl
 #
 # Multi-GPU: tensor-parallel size is auto-detected from CUDA_VISIBLE_DEVICES.
 # =============================================================================
